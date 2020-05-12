@@ -19,21 +19,17 @@ $app->get('/', function ($request, $response) {
     return $response->write('Welcome to Slim!');
 });
 
-$app->post('/users', function ($request, $response) {
-    return $response->withStatus(302);
-});
-
 $app->get('/courses/{id}', function ($request, $response, array $args) {
     $id = $args['id'];
     return $response->write("Course id: {$id}");
 });
 
-$app->get('/users/{id}', function ($request, $response, $args) {
-    $params = ['id' => $args['id'], 'nickname' => 'user-' . $args['id']];
-    // Указанный путь считается относительно базовой директории для шаблонов, заданной на этапе конфигурации
-    // $this доступен внутри анонимной функции благодаря https://php.net/manual/ru/closure.bindto.php
-    return $this->get('renderer')->render($response, 'users/show.phtml', $params);
-});
+//$app->get('/users/{id}', function ($request, $response, $args) {
+//    $params = ['id' => $args['id'], 'nickname' => 'user-' . $args['id']];
+//    // Указанный путь считается относительно базовой директории для шаблонов, заданной на этапе конфигурации
+//    // $this доступен внутри анонимной функции благодаря https://php.net/manual/ru/closure.bindto.php
+//    return $this->get('renderer')->render($response, 'users/show.phtml', $params);
+//});
 
 $users = ['mike', 'mishel', 'adel', 'keks', 'kamila'];
 
@@ -53,5 +49,29 @@ $app->get('/users', function ($request, $response) use ($users) {
 
     return $this->get('renderer')->render($response, "users/users.phtml", $params);
 });
+
+$app->get('/users/new', function ($request, $response) {
+    $params = [
+        'user' => ['name' => '', 'email' => '', 'password' => '', 'passwordConfirmation' => '', 'city' => ''],
+        'errors' => []
+    ];
+    return $this->get('renderer')->render($response, "users/new.phtml", $params);
+});
+
+$app->post('/users', function ($request, $response) {
+    $user = $request->getParsedBodyParam('user');
+    // Валидатор можно сделать через class, и дальнейшие ошибки выводить через errors в сообщениях
+    $params = [
+        'user' => $user,
+        'errors' => 'error'
+    ];
+    $file = 'users.txt';
+    $current = file_get_contents($file);
+    $current .= json_encode($user) . "\n";
+    file_put_contents($file, $current);
+    return $this->get('renderer')->render($response, "users/new.phtml", $params);
+});
+
+
 
 $app->run();
