@@ -1,9 +1,7 @@
 <?php
 
-// Подключение автозагрузки через composer
 require __DIR__ . '/../vendor/autoload.php';
 
-// Контейнеры в этом курсе не рассматриваются (это тема связанная с самим ООП), но если вам интересно, то посмотрите DI Container
 use Slim\Factory\AppFactory;
 use DI\Container;
 
@@ -11,7 +9,6 @@ session_start();
 
 $container = new Container();
 $container->set('renderer', function () {
-    // Параметром передается базовая директория в которой будут храниться шаблоны
     return new \Slim\Views\PhpRenderer(__DIR__ . '/../templates');
 });
 $container->set('flash', function () {
@@ -66,6 +63,14 @@ $app->get('/users/new', function ($request, $response) {
     return $this->get('renderer')->render($response, "users/new.phtml", $params);
 });
 
+$schools = [
+    ['id' => 1, 'name' => 'first'],
+    ['id' => 2, 'name' => 'second'],
+    ['id' => 3, 'name' => 'three'],
+    ['id' => 4, 'name' => 'four'],
+    ['id' => 5, 'name' => 'five']
+];
+
 $app->post('/users', function ($request, $response) {
     $user = $request->getParsedBodyParam('user');
     $flash = $this->get('flash')->getMessages();
@@ -81,6 +86,34 @@ $app->post('/users', function ($request, $response) {
     file_put_contents($file, $current);
     return $this->get('renderer')->render($response, "users/new.phtml", $params);
 });
+
+
+$app->get('/schools', function ($request, $response) use ($schools) {
+//    $repository = new App\SchoolRepository();
+    $params = ['schools' => $schools];
+    return $this->get('renderer')->render($response, "schools/index.phtml", $params);
+})->setName('schools');
+
+$app->get('/schools/{id}', function ($request, $response, array $args) use ($schools) {
+    $id = $args['id'];
+    foreach ($schools as $number) {
+        if (array_search($id, $number)) {
+            $school = $number;
+        };
+    }
+
+    $params = [
+        'school' => $school
+    ];
+
+    if (!$school) {
+        return $response->write('Page not found')
+            ->withStatus(404);
+    }
+
+    return $this->get('renderer')->render($response, 'school/show.phtml', $params);
+})->setName('school');
+
 
 
 $app->run();
