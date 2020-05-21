@@ -26,7 +26,7 @@
         <?php if (isset($errors['password'])): ?>
             <div><?= $errors['password'] ?></div>
         <?php endif ?>
-    </div>
+    </div
     <div>
         <label>
             Подтверждение пароля
@@ -49,3 +49,11 @@
     </div>
     <input type="submit" value="Sign Up">
 </form>
+
+<ul>
+    <?php foreach ($flash as $messages) : ?>
+        <?php foreach ($messages as $message) : ?>
+            <li><?= $message ?></li>
+        <?php endforeach ?>
+    <?php endforeach ?>
+</ul>

@@ -7,12 +7,19 @@ require __DIR__ . '/../vendor/autoload.php';
 use Slim\Factory\AppFactory;
 use DI\Container;
 
+session_start();
+
 $container = new Container();
 $container->set('renderer', function () {
     // Параметром передается базовая директория в которой будут храниться шаблоны
     return new \Slim\Views\PhpRenderer(__DIR__ . '/../templates');
 });
-$app = AppFactory::createFromContainer($container);
+$container->set('flash', function () {
+    return new \Slim\Flash\Messages();
+});
+
+AppFactory::setContainer($container);
+$app = AppFactory::create();
 $app->addErrorMiddleware(true, true, true);
 
 $app->get('/', function ($request, $response) {
@@ -55,15 +62,18 @@ $app->get('/users/new', function ($request, $response) {
         'user' => ['name' => '', 'email' => '', 'password' => '', 'passwordConfirmation' => '', 'city' => ''],
         'errors' => []
     ];
+    $this->get('flash')->addMessage('success', 'Пользователь успешно создан');
     return $this->get('renderer')->render($response, "users/new.phtml", $params);
 });
 
 $app->post('/users', function ($request, $response) {
     $user = $request->getParsedBodyParam('user');
+    $flash = $this->get('flash')->getMessages();
     // Валидатор можно сделать через class, и дальнейшие ошибки выводить через errors в сообщениях
     $params = [
         'user' => $user,
-        'errors' => 'error'
+        'errors' => 'error',
+        'flash' => $flash
     ];
     $file = 'users.txt';
     $current = file_get_contents($file);
@@ -71,7 +81,6 @@ $app->post('/users', function ($request, $response) {
     file_put_contents($file, $current);
     return $this->get('renderer')->render($response, "users/new.phtml", $params);
 });
-
 
 
 $app->run();
