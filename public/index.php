@@ -28,12 +28,19 @@ $app->get('/courses/{id}', function ($request, $response, array $args) {
     return $response->write("Course id: {$id}");
 });
 
-//$app->get('/users/{id}', function ($request, $response, $args) {
-//    $params = ['id' => $args['id'], 'nickname' => 'user-' . $args['id']];
-//    // Указанный путь считается относительно базовой директории для шаблонов, заданной на этапе конфигурации
-//    // $this доступен внутри анонимной функции благодаря https://php.net/manual/ru/closure.bindto.php
-//    return $this->get('renderer')->render($response, 'users/show.phtml', $params);
-//});
+$app->get('/users/new', function ($request, $response) {
+    $params = [
+        'user' => ['name' => '', 'email' => '', 'password' => '', 'passwordConfirmation' => '', 'city' => ''],
+        'errors' => []
+    ];
+    $this->get('flash')->addMessage('success', 'Пользователь успешно создан');
+    return $this->get('renderer')->render($response, "users/new.phtml", $params);
+});
+
+$app->get('/users/{id}', function ($request, $response, $args) {
+    $params = ['id' => $args['id'], 'nickname' => 'user-' . $args['id']];
+    return $this->get('renderer')->render($response, 'users/show.phtml', $params);
+});
 
 $users = ['mike', 'mishel', 'adel', 'keks', 'kamila'];
 
@@ -54,14 +61,6 @@ $app->get('/users', function ($request, $response) use ($users) {
     return $this->get('renderer')->render($response, "users/users.phtml", $params);
 });
 
-$app->get('/users/new', function ($request, $response) {
-    $params = [
-        'user' => ['name' => '', 'email' => '', 'password' => '', 'passwordConfirmation' => '', 'city' => ''],
-        'errors' => []
-    ];
-    $this->get('flash')->addMessage('success', 'Пользователь успешно создан');
-    return $this->get('renderer')->render($response, "users/new.phtml", $params);
-});
 
 $schools = [
     ['id' => 1, 'name' => 'first'],
@@ -89,10 +88,21 @@ $app->post('/users', function ($request, $response) {
 
 
 $app->get('/schools', function ($request, $response) use ($schools) {
-//    $repository = new App\SchoolRepository();
-    $params = ['schools' => $schools];
+    $flash = $this->get('flash')->getMessages();
+    $params = [
+        'schools' => $schools,
+        'flash' => $flash
+    ];
     return $this->get('renderer')->render($response, "schools/index.phtml", $params);
 })->setName('schools');
+
+$app->get('/schools/new', function ($request, $response) {
+    $params = [
+        'schoolData' => [],
+        'errors' => []
+    ];
+    return $this->get('renderer')->render($response, 'schools/new.phtml', $params);
+})->setName('newSchool');
 
 $app->get('/schools/{id}', function ($request, $response, array $args) use ($schools) {
     $id = $args['id'];
@@ -115,5 +125,20 @@ $app->get('/schools/{id}', function ($request, $response, array $args) use ($sch
 })->setName('school');
 
 
+$router = $app->getRouteCollector()->getRouteParser();
+
+$app->post('/schools', function ($request, $response) use ($router) {
+    $schoolData = $request->getParsedBodyParam('school');
+
+    $file = 'schools.txt';
+    $current = file_get_contents($file);
+    $current .= json_encode($schoolData) . "\n";
+    file_put_contents($file, $current);
+
+    $this->get('flash')->addMessage('success', 'School has been created');
+    // Обратите внимание на использование именованного роутинга
+    $url = $router->urlFor('schools');
+    return $response->withRedirect($url);
+});
 
 $app->run();

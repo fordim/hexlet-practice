@@ -1,0 +1,12 @@
+<form action="/schools" method="post">
+    <div>
+        <label>
+            Название *
+            <input type="text" name="school[name]" value="<?= htmlspecialchars($schoolData['name'] ?? ''); ?>">
+        </label>
+        <?php if (isset($errors['name'])): ?>
+            <div><?= $errors['name'] ?></div>
+        <?php endif ?>
+    </div>
+    <input type="submit" value="Create">
+</form>
