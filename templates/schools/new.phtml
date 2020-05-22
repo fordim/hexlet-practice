@@ -8,5 +8,14 @@
             <div><?= $errors['name'] ?></div>
         <?php endif ?>
     </div>
+    <div>
+        <label>
+            Тело *
+            <input type="text" name="school[body]" value="<?= htmlspecialchars($schoolData['body'] ?? ''); ?>">
+        </label>
+        <?php if (isset($errors['body'])): ?>
+            <div><?= $errors['body'] ?></div>
+        <?php endif ?>
+    </div>
     <input type="submit" value="Create">
 </form>

@@ -5,8 +5,6 @@ require __DIR__ . '/../vendor/autoload.php';
 use Slim\Factory\AppFactory;
 use DI\Container;
 
-session_start();
-
 $container = new Container();
 $container->set('renderer', function () {
     return new \Slim\Views\PhpRenderer(__DIR__ . '/../templates');
@@ -18,6 +16,10 @@ $container->set('flash', function () {
 AppFactory::setContainer($container);
 $app = AppFactory::create();
 $app->addErrorMiddleware(true, true, true);
+
+$repo = new App\SchoolRepository();
+$router = $app->getRouteCollector()->getRouteParser();
+
 
 $app->get('/', function ($request, $response) {
     return $response->write('Welcome to Slim!');
@@ -61,6 +63,23 @@ $app->get('/users', function ($request, $response) use ($users) {
     return $this->get('renderer')->render($response, "users/users.phtml", $params);
 });
 
+$app->post('/users', function ($request, $response) {
+    $user = $request->getParsedBodyParam('user');
+    $flash = $this->get('flash')->getMessages();
+
+    $params = [
+        'user' => $user,
+        'errors' => 'error',
+        'flash' => $flash
+    ];
+
+    $file = 'users.txt';
+    $current = file_get_contents($file);
+    $current .= json_encode($user) . "\n";
+    file_put_contents($file, $current);
+    return $this->get('renderer')->render($response, "users/new.phtml", $params);
+});
+
 
 $schools = [
     ['id' => 1, 'name' => 'first'],
@@ -70,27 +89,11 @@ $schools = [
     ['id' => 5, 'name' => 'five']
 ];
 
-$app->post('/users', function ($request, $response) {
-    $user = $request->getParsedBodyParam('user');
-    $flash = $this->get('flash')->getMessages();
-    // Валидатор можно сделать через class, и дальнейшие ошибки выводить через errors в сообщениях
-    $params = [
-        'user' => $user,
-        'errors' => 'error',
-        'flash' => $flash
-    ];
-    $file = 'users.txt';
-    $current = file_get_contents($file);
-    $current .= json_encode($user) . "\n";
-    file_put_contents($file, $current);
-    return $this->get('renderer')->render($response, "users/new.phtml", $params);
-});
-
-
-$app->get('/schools', function ($request, $response) use ($schools) {
+$app->get('/schools', function ($request, $response) use ($schools, $repo) {
     $flash = $this->get('flash')->getMessages();
     $params = [
         'schools' => $schools,
+        'newSchools' => $repo->all(),
         'flash' => $flash
     ];
     return $this->get('renderer')->render($response, "schools/index.phtml", $params);
@@ -124,21 +127,34 @@ $app->get('/schools/{id}', function ($request, $response, array $args) use ($sch
     return $this->get('renderer')->render($response, 'school/show.phtml', $params);
 })->setName('school');
 
-
-$router = $app->getRouteCollector()->getRouteParser();
-
-$app->post('/schools', function ($request, $response) use ($router) {
+$app->post('/schools', function ($request, $response) use ($router, $repo) {
     $schoolData = $request->getParsedBodyParam('school');
 
-    $file = 'schools.txt';
-    $current = file_get_contents($file);
-    $current .= json_encode($schoolData) . "\n";
-    file_put_contents($file, $current);
+    $validator = new App\Validator();
+    // Проверяем корректность данных
+    $errors = $validator->validate($schoolData);
 
-    $this->get('flash')->addMessage('success', 'School has been created');
-    // Обратите внимание на использование именованного роутинга
-    $url = $router->urlFor('schools');
-    return $response->withRedirect($url);
+    if (count($errors) === 0) {
+        // Если данные корректны, то сохраняем, добавляем флеш и выполняем редирект
+        $repo->save($schoolData);
+        $file = 'schools.txt';
+        $current = file_get_contents($file);
+        $current .= json_encode($schoolData) . "\n";
+        file_put_contents($file, $current);
+        $this->get('flash')->addMessage('success', 'School has been created');
+        // Обратите внимание на использование именованного роутинга
+        $url = $router->urlFor('schools');
+        return $response->withRedirect($url);
+    }
+
+    $params = [
+        'schoolData' => $schoolData,
+        'errors' => $errors
+    ];
+
+    // Если возникли ошибки, то устанавливаем код ответа в 422 и рендерим форму с указанием ошибок
+    $response = $response->withStatus(422);
+    return $this->get('renderer')->render($response, 'schools/new.phtml', $params);
 });
 
 $app->run();

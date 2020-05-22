@@ -1,5 +1,6 @@
 <a href="/schools/new">Create school</a>
 
+<h2>Old schools</h2>
 <table>
     <?php foreach ($schools as $school): ?>
         <tr>
@@ -22,3 +23,11 @@
         <?php endforeach ?>
     </ul>
 <?php endif ?>
+
+<h2>New schools</h2>
+
+<?php foreach ($newSchools as $school): ?>
+    <div>
+        <?= htmlspecialchars($school['name']) ?>
+    </div>
+<?php endforeach ?>
