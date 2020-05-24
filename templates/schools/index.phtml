@@ -14,6 +14,14 @@
     <?php endforeach ?>
 </table>
 
+<h2>New schools</h2>
+
+<?php foreach ($newSchools as $school) : ?>
+    <div>
+        <a href="/schools/<?= $school['id'] ?>/edit"><?= htmlspecialchars($school['name']) ?></a>
+    </div>
+<?php endforeach ?>
+
 <?php if (count($flash) > 0): ?>
     <ul>
         <?php foreach ($flash as $messages): ?>
@@ -23,11 +31,3 @@
         <?php endforeach ?>
     </ul>
 <?php endif ?>
-
-<h2>New schools</h2>
-
-<?php foreach ($newSchools as $school): ?>
-    <div>
-        <?= htmlspecialchars($school['name']) ?>
-    </div>
-<?php endforeach ?>

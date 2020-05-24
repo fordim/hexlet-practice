@@ -10,9 +10,9 @@
     </div>
     <div>
         <label>
-            Тело *
-            <input type="text" name="school[body]" value="<?= htmlspecialchars($schoolData['body'] ?? ''); ?>">
+            Содержимое *
         </label>
+        <textarea type="text" name="school[body]"> <?= htmlspecialchars($schoolData['body'] ?? '') ?> </textarea>
         <?php if (isset($errors['body'])): ?>
             <div><?= $errors['body'] ?></div>
         <?php endif ?>

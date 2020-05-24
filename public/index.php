@@ -3,6 +3,7 @@
 require __DIR__ . '/../vendor/autoload.php';
 
 use Slim\Factory\AppFactory;
+use Slim\Middleware\MethodOverrideMiddleware;
 use DI\Container;
 
 $container = new Container();
@@ -15,6 +16,7 @@ $container->set('flash', function () {
 
 AppFactory::setContainer($container);
 $app = AppFactory::create();
+$app->add(MethodOverrideMiddleware::class);
 $app->addErrorMiddleware(true, true, true);
 
 $repo = new App\SchoolRepository();
@@ -155,6 +157,45 @@ $app->post('/schools', function ($request, $response) use ($router, $repo) {
     // Если возникли ошибки, то устанавливаем код ответа в 422 и рендерим форму с указанием ошибок
     $response = $response->withStatus(422);
     return $this->get('renderer')->render($response, 'schools/new.phtml', $params);
+});
+
+$app->get('/schools/{id}/edit', function ($request, $response, array $args) use ($repo) {
+    $id = $args['id'];
+    $school = $repo->find($id);
+    $params = [
+        'school' => $school,
+        'errors' => []
+    ];
+    return $this->get('renderer')->render($response, 'schools/edit.phtml', $params);
+})->setName('editSchool');
+
+$app->patch('/schools/{id}', function ($request, $response, array $args) use ($repo, $router) {
+    $id = $args['id'];
+    $school = $repo->find($id);
+    $data = $request->getParsedBodyParam('school');
+
+    $validator = new App\Validator();
+    $errors = $validator->validate($data);
+
+    if (count($errors) === 0) {
+        // Ручное копирование данных из формы в нашу сущность
+        $school['name'] = $data['name'];
+        $school['body'] = $data['body'];
+
+        $this->get('flash')->addMessage('success', 'School has been updated');
+        $repo->save($school);
+        $url = $router->urlFor('schools', ['id' => $school['id']]);
+        return $response->withRedirect($url);
+    }
+
+    $params = [
+        'schoolData' => $data,
+        'school' => $school,
+        'errors' => $errors
+    ];
+
+    $response = $response->withStatus(422);
+    return $this->get('renderer')->render($response, 'schools/edit.phtml', $params);
 });
 
 $app->run();
