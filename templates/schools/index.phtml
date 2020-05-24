@@ -19,6 +19,10 @@
 <?php foreach ($newSchools as $school) : ?>
     <div>
         <a href="/schools/<?= $school['id'] ?>/edit"><?= htmlspecialchars($school['name']) ?></a>
+        <form action="/schools/<?= $school['id'] ?>" method="post">
+            <input type="hidden" name="_METHOD" value="DELETE">
+            <input type="submit" value="Remove">
+        </form>
     </div>
 <?php endforeach ?>
 

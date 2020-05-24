@@ -198,4 +198,11 @@ $app->patch('/schools/{id}', function ($request, $response, array $args) use ($r
     return $this->get('renderer')->render($response, 'schools/edit.phtml', $params);
 });
 
+$app->delete('/schools/{id}', function ($request, $response, array $args) use ($repo, $router) {
+    $id = $args['id'];
+    $repo->destroy($id);
+    $this->get('flash')->addMessage('success', 'School has been deleted');
+    return $response->withRedirect($router->urlFor('schools'));
+});
+
 $app->run();
